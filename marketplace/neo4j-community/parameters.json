@@ -1,6 +1,6 @@
 {
   "adminPassword": {
-    "value": "Neo4jNeo4j123'"
+    "value": "Neo4jNeo4j123!"
   },
   "vmSize": {
     "value": "Standard_B2s"

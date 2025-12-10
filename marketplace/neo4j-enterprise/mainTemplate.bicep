@@ -91,13 +91,14 @@ var userAssignedIdentityName = 'usermanaged-neo4j-${location}-${resourceSuffix}'
 var adminUsername = string('neo4j')
 var readReplicaEnabledCondition = ((readReplicaCount >= 1) && (graphDatabaseVersion == '4.4'))
 var loadBalancerCondition = ((nodeCount >= 3) || readReplicaEnabledCondition)
+var isStandalone = (nodeCount == 1)
 // Dependencies handled implicitly by Bicep through resource references
 
 resource networkSG 'Microsoft.Network/networkSecurityGroups@2025-01-01' = {
   name: networkSGName
   location: location
   properties: {
-    securityRules: [
+    securityRules: concat([
       {
         name: 'SSH'
         properties: {
@@ -154,6 +155,7 @@ resource networkSG 'Microsoft.Network/networkSecurityGroups@2025-01-01' = {
           direction: 'Inbound'
         }
       }
+    ], isStandalone ? [] : [
       {
         name: 'ClusterCommunication'
         properties: {
@@ -196,7 +198,7 @@ resource networkSG 'Microsoft.Network/networkSecurityGroups@2025-01-01' = {
           direction: 'Inbound'
         }
       }
-    ]
+    ])
   }
 }
 
@@ -223,6 +225,7 @@ resource vnet 'Microsoft.Network/virtualNetworks@2025-01-01' = {
   }
 }
 
+// Public IP for load balancer (cluster mode)
 resource publicIp 'Microsoft.Network/publicIPAddresses@2025-01-01' = if (loadBalancerCondition) {
   name: publicIpName
   location: location
@@ -440,7 +443,7 @@ resource vmScaleSets 'Microsoft.Compute/virtualMachineScaleSets@2025-04-01' = {
                     }
                     loadBalancerBackendAddressPools: (loadBalancerCondition
                       ? loadBalancerBackendAddressPools
-                      : null)
+                      : [])
                   }
                 }
               ]
@@ -566,8 +569,9 @@ resource readReplicaVmScaleSets 'Microsoft.Compute/virtualMachineScaleSets@2025-
   ]
 }
 
-output Neo4jBrowserURL string = uri('http://vm0.neo4j-${deploymentUniqueId}.${location}.cloudapp.azure.com:7474', '')
+output Neo4jBrowserURL string = isStandalone ? uri('http://vm0.neo4j-${deploymentUniqueId}.${location}.cloudapp.azure.com:7474', '') : uri('http://${publicIp!.properties.ipAddress}:7474', '')
 output Neo4jClusterBrowserURL string = loadBalancerCondition ? uri('http://${publicIp!.properties.ipAddress}:7474', '') : ''
 output Neo4jClusterBloomURL string = loadBalancerCondition ? uri('http://${publicIp!.properties.ipAddress}:7474', 'bloom') : ''
-output Neo4jBloomURL string = uri('http://vm0.neo4j-${deploymentUniqueId}.${location}.cloudapp.azure.com:7474', 'bloom')
+output Neo4jBloomURL string = isStandalone ? uri('http://vm0.neo4j-${deploymentUniqueId}.${location}.cloudapp.azure.com:7474', 'bloom') : uri('http://${publicIp!.properties.ipAddress}:7474', 'bloom')
 output Username string = 'neo4j'
+output DeploymentType string = isStandalone ? 'Standalone' : 'Cluster'

@@ -11,7 +11,7 @@ if [ -z "$1" ]; then
 fi
 
 resourceGroup="$1"
-location="westeurope"
+location="eastus2"
 deploymentName="Neo4jDeployment-$(date +%Y%m%d-%H%M%S)"
 
 echo "========================================="

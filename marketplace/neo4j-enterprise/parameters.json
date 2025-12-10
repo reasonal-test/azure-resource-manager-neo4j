@@ -1,12 +1,12 @@
 {
   "adminPassword": {
-    "value": "Neo4jNeo4j123'"
+    "value": "Neo4jNeo4j123!"
   },
   "vmSize": {
-    "value": "Standard_E8s_v5"
+    "value": "Standard_B2s"
   },
   "readReplicaVmSize": {
-    "value": "Standard_E8s_v5"
+    "value": "Standard_B2s"
   },
   "nodeCount": {
     "value": 1
